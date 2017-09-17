@@ -18,3 +18,18 @@
 #define BUFSIZE 1024
 #define MAX_BUFS 4
 
+/**********************
+ * v1 improvements
+ *  1 intrinsics for synchronization
+ *  2 formal header for shmem buf (msg box, state)
+ *  3 make name of shared mem handle configurable
+  * 
+ * if this is ever scaled ...
+ * Consider setting up mapped buffer pairs for "lockless" updating.
+ *    2x a r/w pair. 4 total shared buffers.
+ *    or a larger number of total shared buffers, specialized i/o ordering
+ * RCU-like, with changes written to a background copy of memory 
+ * and merged into the foreground (original) as soon as exclusive 
+ * is achived. 
+ */
+
