@@ -94,10 +94,8 @@ int main(int argc, char **argv)
 	}
 	int ccode = buffer_to_file(stdout, buf + sizeof(*sem),  BUFSIZE - sizeof(*sem));
     /* clear the semaphore, ok to re-use the mem */
-//	*sem = 0;
-	sem = buf;
 	*sem = 0;
-	printf("we made it!\n");
+	printf("i made it!\n");
 
 	/* remove the shared memory segment */
 	if (shm_unlink("\\the_untrusted_one") == -1) {
