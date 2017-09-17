@@ -93,7 +93,7 @@ int main(int argc, char **argv)
 		sched_yield();
 	}
 	int ccode = buffer_to_file(stdout, buf + sizeof(*sem),  BUFSIZE - sizeof(*sem));
-    /* clear the semaphore, ok to re-use the mem */
+    /* clear the semaphore, ok to re-use the mem, kick the producer */
 	*sem = 0;
 	printf("i made it!\n");
 

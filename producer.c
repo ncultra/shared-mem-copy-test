@@ -112,12 +112,17 @@ int main(int argc, char **argv)
 		ccode = EXIT_FAILURE;
 		goto exit_input_file;
 	}
+	
+/* sem values:
+ * 0 empty, writeable
+ * 1 contents, readable
+ */
 	uint64_t *sem = shared_buf;
-	*sem = 0;
+    /* warn readers to stay away  right now */
+	*sem = 0 ;
 	ccode = dump_file(fp, shared_buf + sizeof(uint64_t), BUFSIZE - sizeof(uint64_t));
-     /*  kick the consumer */
+     /*  kick the readers */
 	*sem = 1;
-
 	/* now we want to wait for consumer to read, */
 
 	while ( *sem == 1 ) {
