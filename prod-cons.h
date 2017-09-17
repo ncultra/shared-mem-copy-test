@@ -11,6 +11,7 @@
 #include <sys/mman.h>
 #include <sys/types.h>
 #include <limits.h>
+#include <sched.h>
 
 #define NARGS 2
 #define MAP_SIZE 4096

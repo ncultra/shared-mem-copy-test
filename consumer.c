@@ -29,7 +29,7 @@ void check_and_get_args(int __argc, char **__argv)
  */
 int buffer_to_file(FILE *fp, void *buf, int num)
 {
-	int read = 0, i = 0;
+	int read = 0, i = 0, ccode = -1;
 	void *cursor = buf;
 	void *end = buf + num;
 
@@ -37,9 +37,9 @@ int buffer_to_file(FILE *fp, void *buf, int num)
 		   cursor + (2 * sizeof(uint64_t)) < end)
 
 	{
-	/* read the length, check for safety, write 'len' bytes to file
-	 * advance cursor, repeat 
-	 */
+		/* read the length, check for safety, write 'len' bytes to file
+		 * advance cursor, repeat 
+		 */
 
 		uint64_t len = *(uint64_t *)cursor;
 		
@@ -48,41 +48,55 @@ int buffer_to_file(FILE *fp, void *buf, int num)
 			printf("we read some data the was inconsistent with your reputation\n");
 			printf("length of next sentence: %d, avail buffer space: %d\n",
 				   len, num - read);
-			goto bad_out;
+			ccode = -1;
+			goto err_out;
 		}
 		
 		fwrite(cursor + sizeof(uint64_t), sizeof(char), len, fp);
 		cursor += (len + sizeof(len));
 		read += (len + sizeof(len));
 	}
-
-	return 0;
-	
-bad_out:
-
-	return -1;
-	
+	ccode = 0;
+err_out:
+	return ccode;
 }
 
 
-
+/* bare-bones synchronization 
+ * first byte of the shared buffer is a semaphore.
+ * can only write the the buffer if the first byte is zero,
+ * can only read when the first byte is one.
+ * shm header: 
+ * uint64_t semaphore
+ *  
+*/
 
 
 int main(int argc, char **argv)
 {
 	check_and_get_args(argc, argv);
-	int fd = shm_open("\\the_untrusted_one", O_RDONLY, 0444);
+	int fd = shm_open("\\the_untrusted_one", O_RDWR, 0666);
 	if (fd <= 0) {
 		perror("untrusted perducer-consumer: ");
 		exit(EXIT_FAILURE);
 	}
-	void *buf = mmap(0, BUFSIZ, PROT_READ, MAP_SHARED, fd, 0);
+	void *buf = mmap(0, BUFSIZ, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 	if (buf == MAP_FAILED) {
 		perror("memory map: ");
 		exit (EXIT_FAILURE);
 	}
-	int ccode = buffer_to_file(stdout, buf,  BUFSIZE);
-	
+	/* synchronize with other users */
+	uint64_t *sem = buf;
+
+	/* what until its ok to read from the shared buf */
+	while (*sem != 1) {
+		sched_yield();
+	}
+	int ccode = buffer_to_file(stdout, buf + sizeof(*sem),  BUFSIZE - sizeof(*sem));
+    /* clear the semaphore, ok to re-use the mem */
+//	*sem = 0;
+	sem = buf;
+	*sem = 0;
 	printf("we made it!\n");
 
 	/* remove the shared memory segment */

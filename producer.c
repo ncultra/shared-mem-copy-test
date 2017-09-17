@@ -112,8 +112,18 @@ int main(int argc, char **argv)
 		ccode = EXIT_FAILURE;
 		goto exit_input_file;
 	}
+	uint64_t *sem = shared_buf;
+	*sem = 0;
+	ccode = dump_file(fp, shared_buf + sizeof(uint64_t), BUFSIZE - sizeof(uint64_t));
+     /*  kick the consumer */
+	*sem = 1;
 
-	ccode = dump_file(fp, shared_buf, BUFSIZE);
+	/* now we want to wait for consumer to read, */
+
+	while ( *sem == 1 ) {
+		sched_yield();
+	}
+	printf ("i made it too\n");
 	ccode = 0;
 	
 exit_shm:
