@@ -7,20 +7,27 @@ int num_shared_bufs, in_str_len;
 void check_and_get_args(int __argc, char **__argv)
 {
 
-	/* arrays are zero-indexed, others 1-indexed. */
-	if (__argc - 1 != NARGS) { 
+/* we will take one or two arguments */
+	if (__argc - 1 != NARGS && __argc - 1 != NARGS - 1) { 
 		exit(EXIT_FAILURE);
 	}
 	num_shared_bufs = strtol(__argv[1], NULL, 10);
 	if (num_shared_bufs < 0 || num_shared_bufs > MAX_BUFS) {
 		exit(EXIT_FAILURE);
 	}
-	
-	in_str_len = strnlen(__argv[2], PATH_MAX);
-	if  (in_str_len == 0x00 || in_str_len == PATH_MAX) {
-		exit(EXIT_FAILURE);
+
+	/* if we have a second parameter */
+	if (__argc - 1 == NARGS) {
+		
+		in_str_len = strnlen(__argv[2], PATH_MAX);
+		if  (in_str_len == 0x00 || in_str_len == PATH_MAX) {
+			exit(EXIT_FAILURE);
+		}
+		strncpy(in_search_string, __argv[2], in_str_len);
+	} else {
+		strcpy(in_search_string, "");
 	}
-	strncpy(in_search_string, __argv[2], in_str_len);
+	
 	return;
 }
 
@@ -33,11 +40,6 @@ int buffer_to_file(FILE *fp, void *buf, int num, char *substring)
 	int read = 0, i = 0, ccode = -1;
 	void *cursor = buf;
 	void *end = buf + num;
-	char *default_substring = "";
-
-	if (substring != NULL) {
-		default_substring = substring;
-	}
 	
 	while (read + (2 * sizeof(uint64_t)) < num &&
 		   cursor + (2 * sizeof(uint64_t)) < end)
@@ -59,7 +61,7 @@ int buffer_to_file(FILE *fp, void *buf, int num, char *substring)
 		}
 
 		/* if pos points to "", match everything */
-		char *pos = strstr(cursor + sizeof(uint64_t), default_substring);
+		char *pos = strstr(cursor + sizeof(uint64_t), substring);
 		if (pos) {
 			fwrite(cursor + sizeof(uint64_t), sizeof(char), len, fp);			
 		}
@@ -80,7 +82,7 @@ err_out:
  * shm header: 
  * uint64_t semaphore
  *  
-*/
+ */
 
 
 int main(int argc, char **argv)
