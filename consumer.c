@@ -26,13 +26,19 @@ void check_and_get_args(int __argc, char **__argv)
 
 /* read share buffer and unpack into text format, 
  * output to file handle.
+ * empty substring "" matches all lines
  */
-int buffer_to_file(FILE *fp, void *buf, int num)
+int buffer_to_file(FILE *fp, void *buf, int num, char *substring)
 {
 	int read = 0, i = 0, ccode = -1;
 	void *cursor = buf;
 	void *end = buf + num;
+	char *default_substring = "";
 
+	if (substring != NULL) {
+		default_substring = substring;
+	}
+	
 	while (read + (2 * sizeof(uint64_t)) < num &&
 		   cursor + (2 * sizeof(uint64_t)) < end)
 
@@ -51,13 +57,18 @@ int buffer_to_file(FILE *fp, void *buf, int num)
 			ccode = -1;
 			goto err_out;
 		}
-		
-		fwrite(cursor + sizeof(uint64_t), sizeof(char), len, fp);
+
+		/* if pos points to "", match everything */
+		char *pos = strstr(cursor + sizeof(uint64_t), default_substring);
+		if (pos) {
+			fwrite(cursor + sizeof(uint64_t), sizeof(char), len, fp);			
+		}
 		cursor += (len + sizeof(len));
 		read += (len + sizeof(len));
 	}
 	ccode = 0;
 err_out:
+	/* do any of the error paths need to sync using the 0/1 sem? */
 	return ccode;
 }
 
@@ -92,7 +103,9 @@ int main(int argc, char **argv)
 	while (*sem != 1) {
 		sched_yield();
 	}
-	int ccode = buffer_to_file(stdout, buf + sizeof(*sem),  BUFSIZE - sizeof(*sem));
+	int ccode = buffer_to_file(stdout, buf + sizeof(*sem),
+							   BUFSIZE - sizeof(*sem),
+							   in_search_string);
     /* clear the semaphore, ok to re-use the mem, kick the producer */
 	*sem = 0;
 	printf("i made it!\n");
