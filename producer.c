@@ -3,9 +3,6 @@
 char in_file_path[PATH_MAX + 1];
 int num_shared_bufs, in_path_len;
 
-/* really need messages and re-think method of exiting 
-   from a function. */
-
 void check_and_get_args(int __argc, char **__argv)
 {
 
@@ -55,25 +52,9 @@ int dump_file(FILE *fp, void *buf, int num)
 		written += (len + sizeof(len));
 		cursor += (len + sizeof(len));
 		printf ("Line %4d: %s", i++, old_cursor + sizeof(uint64_t));
-//		printf("written %d, remaining %d\n", written, num - written);
 	}
 	return i;
 }
-
-// prefer throughput when a decision needs to be made
-// can I simply map the input file to shared memory
-//      (instead of streaming/copying)? NO, don't
-// additional rules to consider:
-//   buffer format - length, how many bits?, alignment?
-// any rule about sentences? length?
-// buffer = 1k
-// map = 4 buffers
-// header-footer issues: header should specify
-//    the number of sentences, there should be an
-//    end marker for the buf.
-// first sentence will be a normal sentence but contain
-// a header for the shared buff - e.g.:
-// "349" "num lines, end marker, any other useful stuff
 
 int main(int argc, char **argv) 
 {
@@ -119,7 +100,8 @@ int main(int argc, char **argv)
  */
 	uint64_t *sem = shared_buf;
     /* warn readers to stay away  right now */
-	*sem = 0 ;
+	__atomic_store_n(sem, 0, __ATOMIC_SEQ_CST);
+
 	ccode = dump_file(fp, shared_buf + sizeof(uint64_t), BUFSIZE - sizeof(uint64_t));
      /*  kick the readers */
 	*sem = 1;

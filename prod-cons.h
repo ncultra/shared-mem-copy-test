@@ -33,3 +33,18 @@
  * is achived. 
  */
 
+/* v2 improvemements - atomic buffer sharing 
+ * share more common constructs using header
+ * 
+ */
+
+/*
+ * version 3 - "rcu memory mappings" ?? 
+ */
+
+
+// buffer = 1k
+// map = 4 buffers
+// first sentence will be a normal sentence but contain
+// a header for the shared buff - e.g.:
+// "349" "num lines, end marker, any other useful stuff

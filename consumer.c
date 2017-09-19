@@ -60,7 +60,7 @@ int buffer_to_file(FILE *fp, void *buf, int num, char *substring)
 			goto err_out;
 		}
 
-		/* if pos points to "", match everything */
+		/* if substring is empty, match everything */
 		char *pos = strstr(cursor + sizeof(uint64_t), substring);
 		if (pos) {
 			fwrite(cursor + sizeof(uint64_t), sizeof(char), len, fp);			
@@ -84,7 +84,6 @@ err_out:
  *  
  */
 
-
 int main(int argc, char **argv)
 {
 	check_and_get_args(argc, argv);
@@ -101,15 +100,17 @@ int main(int argc, char **argv)
 	/* synchronize with other users */
 	uint64_t *sem = buf;
 
-	/* what until its ok to read from the shared buf */
-	while (*sem != 1) {
+	/* wait until its ok to read from the shared buf */
+	while ( __atomic_load_n(sem, __ATOMIC_SEQ_CST) != 1) {
 		sched_yield();
 	}
+	
 	int ccode = buffer_to_file(stdout, buf + sizeof(*sem),
 							   BUFSIZE - sizeof(*sem),
 							   in_search_string);
-    /* clear the semaphore, ok to re-use the mem, kick the producer */
-	*sem = 0;
+
+    __atomic_store_n(sem, 0, __ATOMIC_SEQ_CST);
+	
 	printf("i made it!\n");
 
 	/* remove the shared memory segment */
