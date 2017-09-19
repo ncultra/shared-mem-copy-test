@@ -31,9 +31,8 @@ void check_and_get_args(int __argc, char **__argv)
 	return;
 }
 
-/* read share buffer and unpack into text format, 
- * output to file handle.
- * empty substring "" matches all lines
+/* read shared buffer and output to file handle in text format, 
+ * empty substring  "" matches all lines
  */
 int buffer_to_file(FILE *fp, void *buf, int num, char *substring)
 {
