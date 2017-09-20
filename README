@@ -1,0 +1,17 @@
+Notes:
+
+To build the programs, run make all in the same directory.
+
+* You may run the consumer with only one argument, number of buffers, in which case it will match all the text in the file. (Don't pass it a search string.)
+
+* Built, run, (not really) tested on fc21.x86_64, and gcc version 4.9.2 20150212 (Red Hat 4.9.2-6) (GCC)
+
+Run the producer first in one shell:
+
+./producer 16 ~/.emacs
+
+and the consumer in another shell:
+
+./consumer 16 "(defun ew()  "
+
+and, you may run consumer with only the first argument, in which case it will print all the text in the buffer.
