@@ -36,7 +36,7 @@ void check_and_get_args(int __argc, char **__argv)
  */
 int buffer_to_file(FILE *fp, void *buf, int num, char *substring)
 {
-	int read = 0, i = 0, ccode = -1;
+	int read = 0, ccode = -1;
 	void *cursor = buf;
 	void *end = buf + num;
 	
@@ -54,7 +54,7 @@ int buffer_to_file(FILE *fp, void *buf, int num, char *substring)
 			/*	would overflow */
 			printf("we read some data the was inconsistent with your reputation\n");
 			printf("length of next sentence: %d, avail buffer space: %d\n",
-				   len, num - read);
+				   (int)len, num - read);
 			ccode = -1;
 			goto err_out;
 		}
@@ -118,9 +118,13 @@ int main(int argc, char **argv)
 							   in_search_string);
 
     __atomic_store_n(&h->sem, 0, __ATOMIC_SEQ_CST);
-	
+
 	printf("i made it! ... removing the shared memory segment...\n");
 
+	if (ccode ) {
+		printf("error moving buffer data to a file...\n");
+	}
+	
 	if (shm_unlink("\\the_untrusted_one") == -1) {
 		printf("Error removing %s\n", "\\the_untrusted_one");
 		exit(-1);

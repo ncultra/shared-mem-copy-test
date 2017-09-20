@@ -50,7 +50,7 @@ int dump_file(FILE *fp, void *buf, int num)
 		*(uint64_t *)old_cursor = len; 
 		written += (len + sizeof(len));
 		cursor += (len + sizeof(len));
-		printf ("Line %4d: %s", i++, old_cursor + sizeof(uint64_t));
+		printf ("Line %4d: %s", i++, (char *)old_cursor + sizeof(uint64_t));
 	}
 	return i;
 }
