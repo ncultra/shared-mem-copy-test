@@ -61,11 +61,19 @@ int main(int argc, char **argv)
 	
 	FILE *fp;
 	int ccode = EXIT_FAILURE;
+	int map_size;
 	
 	/* this next call initializes global vars for us */
 	check_and_get_args(argc, argv);
-	/* now in_file_path and num_shared_bufs are initialized */
 
+	/* now in_file_path and num_shared_bufs are initialized */
+	map_size = num_shared_bufs * BUFSIZE;
+
+    /* map is always going to be rounded up to page size */
+	if (map_size % PAGE_SIZE) {
+		map_size += (PAGE_SIZE - (map_size % PAGE_SIZE));
+	}
+	
 	fp = fopen(in_file_path, "r") ;
 	if (fp == NULL) {
 		perror("error opening file - bad path?");
@@ -81,9 +89,9 @@ int main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
-	ftruncate(fd, MAP_SIZE);
+	ftruncate(fd, map_size);
 	
-	void *shared_buf = mmap(0, MAP_SIZE,
+	void *shared_buf = mmap(0, map_size,
 							PROT_READ | PROT_WRITE, MAP_SHARED,
 							fd, 0);
 	
@@ -102,7 +110,7 @@ int main(int argc, char **argv)
     /* warn readers to stay away  right now */
 	__atomic_store_n(sem, 0, __ATOMIC_SEQ_CST);
 
-	ccode = dump_file(fp, shared_buf + sizeof(uint64_t), BUFSIZE - sizeof(uint64_t));
+	ccode = dump_file(fp, shared_buf + sizeof(uint64_t), map_size - sizeof(uint64_t));
      /*  kick the readers */
 	*sem = 1;
 	/* now we want to wait for consumer to read, */

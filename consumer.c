@@ -91,7 +91,15 @@ int main(int argc, char **argv)
 		perror("untrusted perducer-consumer: ");
 		exit(EXIT_FAILURE);
 	}
-	void *buf = mmap(0, BUFSIZ, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+
+	/* the memory map will be rounded up to the next page, so use 
+	 * it anyway */
+	int requested_size = num_shared_bufs * BUFSIZE;
+	if (requested_size % (PAGE_SIZE)) {
+		requested_size += (PAGE_SIZE - (requested_size % PAGE_SIZE));
+	}
+	
+	void *buf = mmap(0, requested_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 	if (buf == MAP_FAILED) {
 		perror("memory map: ");
 		exit (EXIT_FAILURE);
@@ -105,7 +113,7 @@ int main(int argc, char **argv)
 	}
 	
 	int ccode = buffer_to_file(stdout, buf + sizeof(*sem),
-							   BUFSIZE - sizeof(*sem),
+							   requested_size - sizeof(*sem),
 							   in_search_string);
 
     __atomic_store_n(sem, 0, __ATOMIC_SEQ_CST);

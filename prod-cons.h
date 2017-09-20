@@ -14,9 +14,9 @@
 #include <sched.h>
 
 #define NARGS 2
-#define MAP_SIZE 4096
+#define PAGE_SIZE 4096
 #define BUFSIZE 1024
-#define MAX_BUFS 4
+#define MAX_BUFS 400
 
 /**********************
  * v1 improvements
