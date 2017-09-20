@@ -69,14 +69,13 @@ int buffer_to_file(FILE *fp, void *buf, int num, char *substring)
 	}
 	ccode = 0;
 err_out:
-	/* do any of the error paths need to sync using the 0/1 sem? */
 	return ccode;
 }
 
 
 /* bare-bones synchronization 
- * first byte of the shared buffer is a semaphore.
- * can only write the the buffer if the first byte is zero,
+ * first element of the shared buffer is a semaphore.
+ * can only write the the buffer if the first 64-bits are zero,
  * can only read when the first byte is one.
  * shm header: 
  * uint64_t semaphore
@@ -86,6 +85,8 @@ err_out:
 int main(int argc, char **argv)
 {
 	check_and_get_args(argc, argv);
+    /* above just validated the command arguments */
+
 	int fd = shm_open("\\the_untrusted_one", O_RDWR, 0666);
 	if (fd <= 0) {
 		perror("untrusted perducer-consumer: ");
@@ -104,27 +105,30 @@ int main(int argc, char **argv)
 		perror("memory map: ");
 		exit (EXIT_FAILURE);
 	}
-	/* synchronize with other users */
-	uint64_t *sem = buf;
+    /* synchronize with other users */
 
+	struct buf_head *h = buf;
 	/* wait until its ok to read from the shared buf */
-	while ( __atomic_load_n(sem, __ATOMIC_SEQ_CST) != 1) {
+	while ( __atomic_load_n(&h->sem, __ATOMIC_SEQ_CST) != 1) {
 		sched_yield();
 	}
 	
-	int ccode = buffer_to_file(stdout, buf + sizeof(*sem),
-							   requested_size - sizeof(*sem),
+	int ccode = buffer_to_file(stdout, buf + sizeof(h->sem),
+							   requested_size - sizeof(h->sem),
 							   in_search_string);
 
-    __atomic_store_n(sem, 0, __ATOMIC_SEQ_CST);
+    __atomic_store_n(&h->sem, 0, __ATOMIC_SEQ_CST);
 	
-	printf("i made it!\n");
+	printf("i made it! ... removing the shared memory segment...\n");
 
-	/* remove the shared memory segment */
 	if (shm_unlink("\\the_untrusted_one") == -1) {
 		printf("Error removing %s\n", "\\the_untrusted_one");
 		exit(-1);
 	}
 
+	printf("ok, waiting for further instructions!\n");
+	while ( 1 ) {
+		sched_yield();
+	}
 	return 0;
 }

@@ -46,7 +46,6 @@ int dump_file(FILE *fp, void *buf, int num)
 		   fgets(cursor + sizeof(uint64_t), num - written, fp) != NULL)
 	{
 		uint64_t len  = strnlen(cursor + sizeof(uint64_t), num - written);
-		/* if tmp == num - written we have a potential overflow */
 		void *old_cursor = cursor;
 		*(uint64_t *)old_cursor = len; 
 		written += (len + sizeof(len));
@@ -103,26 +102,26 @@ int main(int argc, char **argv)
 	}
 	
 /* sem values:
- * 0 empty, writeable
- * 1 contents, readable
+ * 0 empty, writeable - don't read the shared buffer
+ * 1 buffer contents are readable
  */
-	uint64_t *sem = shared_buf;
+	struct buf_head *h = shared_buf;
+//	uint64_t *sem = shared_buf;
     /* warn readers to stay away  right now */
-	__atomic_store_n(sem, 0, __ATOMIC_SEQ_CST);
+	__atomic_store_n(&h->sem, 0, __ATOMIC_SEQ_CST);
 
-	ccode = dump_file(fp, shared_buf + sizeof(uint64_t), map_size - sizeof(uint64_t));
+	ccode = dump_file(fp, shared_buf + sizeof(struct buf_head),
+					  map_size - sizeof(struct buf_head));
      /*  kick the readers */
-	*sem = 1;
-	/* now we want to wait for consumer to read, */
-
-	while ( *sem == 1 ) {
+	__atomic_store_n(&h->sem, 1, __ATOMIC_SEQ_CST);
+	
+    /* now we want to wait for consumer to read, */
+	while ( __atomic_load_n(&h->sem, __ATOMIC_SEQ_CST) == 1 ) {
 		sched_yield();
 	}
 	printf ("i made it too\n");
 	ccode = 0;
 	
-exit_shm:
-//	shm_unlink("the_untrusted_one");
 exit_input_file:
 	fclose(fp);
 	return ccode;

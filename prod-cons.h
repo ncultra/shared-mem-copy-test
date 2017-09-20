@@ -18,33 +18,8 @@
 #define BUFSIZE 1024
 #define MAX_BUFS 400
 
-/**********************
- * v1 improvements
- *  1 intrinsics for synchronization
- *  2 formal header for shmem buf (msg box, state)
- *  3 make name of shared mem handle configurable
-  * 
- * if this is ever scaled ...
- * Consider setting up mapped buffer pairs for "lockless" updating.
- *    2x a r/w pair. 4 total shared buffers.
- *    or a larger number of total shared buffers, specialized i/o ordering
- * RCU-like, with changes written to a background copy of memory 
- * and merged into the foreground (original) as soon as exclusive 
- * is achived. 
- */
+struct buf_head {
+	uint64_t sem;
+	void *mm;
+};
 
-/* v2 improvemements - atomic buffer sharing 
- * share more common constructs using header
- * 
- */
-
-/*
- * version 3 - "rcu memory mappings" ?? 
- */
-
-
-// buffer = 1k
-// map = 4 buffers
-// first sentence will be a normal sentence but contain
-// a header for the shared buff - e.g.:
-// "349" "num lines, end marker, any other useful stuff
