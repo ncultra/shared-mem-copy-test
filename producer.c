@@ -1,4 +1,4 @@
-#include "prod-cons.h"
+ #include "prod-cons.h"
 
 char in_file_path[PATH_MAX + 1];
 int num_shared_bufs, in_path_len;
@@ -38,7 +38,8 @@ int dump_file(FILE *fp, void *buf, int num)
 	int written = 0, i = 0;
 	void *cursor =  buf;
 
-/* validate input here */
+    /* don't read or count beyond buffer length, check the buf size, 
+     * remaining size,  */
 
 	fseek(fp, 0, SEEK_SET);
 	
