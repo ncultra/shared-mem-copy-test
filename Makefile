@@ -9,3 +9,17 @@ producer: producer.c prod-cons.h
 .PHONY: clean
 clean:
 	rm -v *.o producer consumer 
+
+.PHONY: lint
+lint:
+	find . -name "*.c"  -exec cppcheck --force {} \;
+	find . -name "*.h"  -exec cppcheck --force {} \;
+
+.PHONY: pretty
+pretty:
+	find . -name "*.c"  -exec indent -gnu {} \;
+	find . -name "*.h"  -exec indent -gnu {} \;
+
+.PHONY: scan-build
+scan-build:
+	scan-build make all
